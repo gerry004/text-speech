@@ -1,50 +1,70 @@
 // app/page.js
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 export default function TextToSpeech() {
   const [text, setText] = useState('');
-  const [voices, setVoices] = useState([]);
-  const [selectedVoice, setSelectedVoice] = useState('');
+  const [selectedVoice, setSelectedVoice] = useState('en-US-Standard-A');
   const [speaking, setSpeaking] = useState(false);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Initialize speech synthesis and get available voices
-    const synth = window.speechSynthesis;
-    
-    const loadVoices = () => {
-      const availableVoices = synth.getVoices();
-      setVoices(availableVoices);
-      if (availableVoices.length > 0) {
-        setSelectedVoice(availableVoices[0].name);
+  // Replace the voice loading useEffect with a static list of Google voices
+  const voices = [
+    { name: 'en-US-Standard-A', label: 'US English - Female' },
+    { name: 'en-US-Standard-B', label: 'US English - Male' },
+    { name: 'en-US-Standard-C', label: 'US English - Female 2' },
+    { name: 'en-US-Standard-D', label: 'US English - Male 2' },
+    { name: 'en-US-Standard-E', label: 'US English - Female 3' },
+    { name: 'en-US-Standard-F', label: 'US English - Female 4' },
+    { name: 'en-US-Standard-G', label: 'US English - Female 5' },
+    { name: 'en-US-Standard-H', label: 'US English - Female 6' },
+    { name: 'en-US-Standard-I', label: 'US English - Male 3' },
+    { name: 'en-US-Standard-J', label: 'US English - Male 4' },
+  ];
+
+  const speak = useCallback(async () => {
+    if (!text || loading) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await fetch('/api/synthesize', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text,
+          voice: selectedVoice,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to synthesize speech');
       }
-    };
 
-    loadVoices();
-    
-    // Chrome loads voices asynchronously
-    if (speechSynthesis.onvoiceschanged !== undefined) {
-      speechSynthesis.onvoiceschanged = loadVoices;
+      const audioBlob = await response.blob();
+      const url = URL.createObjectURL(audioBlob);
+      setAudioUrl(url);
+
+      // Play the audio
+      const audio = new Audio(url);
+      audio.play();
+      setSpeaking(true);
+      
+      audio.onended = () => {
+        setSpeaking(false);
+      };
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setLoading(false);
     }
-  }, []);
-
-  const speak = () => {
-    if (!text) return;
-
-    const synth = window.speechSynthesis;
-    const utterance = new SpeechSynthesisUtterance(text);
-    
-    const voice = voices.find(v => v.name === selectedVoice);
-    if (voice) {
-      utterance.voice = voice;
-    }
-
-    utterance.onstart = () => setSpeaking(true);
-    utterance.onend = () => setSpeaking(false);
-
-    synth.speak(utterance);
-  };
+  }, [text, selectedVoice, loading]);
 
   const stopSpeaking = () => {
     const synth = window.speechSynthesis;
@@ -60,6 +80,10 @@ export default function TextToSpeech() {
         </div>
         
         <div className="space-y-4">
+          {error && (
+            <div className="text-red-500 text-sm">{error}</div>
+          )}
+          
           <textarea
             placeholder="Enter text to convert to speech..."
             value={text}
@@ -75,7 +99,7 @@ export default function TextToSpeech() {
             >
               {voices.map((voice) => (
                 <option key={voice.name} value={voice.name}>
-                  {voice.name}
+                  {voice.label}
                 </option>
               ))}
             </select>
@@ -83,14 +107,14 @@ export default function TextToSpeech() {
             <div className="flex space-x-2">
               <button
                 onClick={speak}
-                disabled={speaking || !text}
+                disabled={loading || speaking || !text}
                 className={`flex-1 px-4 py-2 rounded-lg text-white font-medium 
-                  ${speaking || !text 
+                  ${loading || speaking || !text 
                     ? 'bg-blue-300 cursor-not-allowed' 
                     : 'bg-blue-500 hover:bg-blue-600 active:bg-blue-700'
                   }`}
               >
-                {speaking ? 'Speaking...' : 'Speak'}
+                {loading ? 'Generating...' : speaking ? 'Speaking...' : 'Speak'}
               </button>
               
               {speaking && (
@@ -103,6 +127,16 @@ export default function TextToSpeech() {
               )}
             </div>
           </div>
+
+          {audioUrl && (
+            <a
+              href={audioUrl}
+              download={`speech_${Date.now()}.mp3`}
+              className="inline-block px-4 py-2 rounded-lg text-white font-medium bg-green-500 hover:bg-green-600 active:bg-green-700"
+            >
+              Download Audio
+            </a>
+          )}
         </div>
       </div>
     </div>
