@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
-import { TextToSpeechClient } from '@google-cloud/text-to-speech';
 
-const client = new TextToSpeechClient({
-  credentials: {
-    client_email: process.env.GOOGLE_CLIENT_EMAIL,
-    private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-  },
-  projectId: process.env.GOOGLE_PROJECT_ID,
-});
+const ELEVEN_LABS_API_KEY = process.env.ELEVEN_LABS_API_KEY;
+const ELEVEN_LABS_API_URL = 'https://api.elevenlabs.io/v1/text-to-speech';
+
+// You can choose different voice IDs from ElevenLabs
+const VOICE_IDS = {
+  host1: 'pNInz6obpgDQGcFmaJgB', // Adam - male voice
+  host2: 'EXAVITQu4vr4xnSDxMaL'  // Rachel - female voice
+};
 
 export async function POST(request: Request) {
   try {
@@ -19,22 +19,32 @@ export async function POST(request: Request) {
 
     for (const part of parts) {
       const isHost1 = part.startsWith('Host 1:');
-      const [response] = await client.synthesizeSpeech({
-        input: { text: part.replace(/Host [12]:/, '').trim() },
-        voice: {
-          languageCode: 'en-US',
-          name: isHost1 ? 'en-US-Standard-B' : 'en-US-Standard-A',
+      const cleanText = part.replace(/Host [12]:/, '').trim();
+      
+      const response = await fetch(`${ELEVEN_LABS_API_URL}/${isHost1 ? VOICE_IDS.host1 : VOICE_IDS.host2}`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'audio/mpeg',
+          'Content-Type': 'application/json',
+          'xi-api-key': ELEVEN_LABS_API_KEY!,
         },
-        audioConfig: { 
-          audioEncoding: 'MP3',
-          pitch: 0,
-          speakingRate: 1,
-        },
+        body: JSON.stringify({
+          text: cleanText,
+          model_id: 'eleven_monolingual_v1',
+          voice_settings: {
+            stability: 0.4,
+            similarity_boost: 0.3,
+            speaking_rate: 1.1
+          }
+        }),
       });
 
-      if (response.audioContent) {
-        audioContents.push(Buffer.from(response.audioContent));
+      if (!response.ok) {
+        throw new Error(`ElevenLabs API error: ${response.statusText}`);
       }
+
+      const audioBuffer = await response.arrayBuffer();
+      audioContents.push(Buffer.from(audioBuffer));
     }
 
     // Combine all audio buffers
