@@ -2,51 +2,41 @@ import { useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 
 interface FileUploaderProps {
-  files: File[];
   setFiles: (files: File[]) => void;
 }
 
-export function FileUploader({ files, setFiles }: FileUploaderProps) {
+export function FileUploader({ setFiles }: FileUploaderProps) {
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    setFiles((prev) => [...prev, ...acceptedFiles]);
+    setFiles([...acceptedFiles]);
   }, [setFiles]);
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const { getRootProps, getInputProps } = useDropzone({
     onDrop,
     accept: {
       'application/pdf': ['.pdf'],
     },
+    noClick: false,
+    noKeyboard: false,
+    noDrag: true,
   });
 
   return (
-    <div>
-      <div
-        {...getRootProps()}
-        className={`border-2 border-dashed p-4 rounded-lg text-center cursor-pointer
-          ${isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
+    <button
+      {...getRootProps()}
+      className="p-2 text-gray-400 hover:text-gray-200 transition-colors"
+      title="Attach files"
+    >
+      <input {...getInputProps()} />
+      <svg 
+        width="24" 
+        height="24" 
+        viewBox="0 0 24 24" 
+        fill="none" 
+        stroke="currentColor" 
+        strokeWidth="2"
       >
-        <input {...getInputProps()} />
-        <p>Drag & drop PDF files here, or click to select files</p>
-      </div>
-
-      {files.length > 0 && (
-        <div className="mt-4">
-          <h3 className="font-semibold">Uploaded files:</h3>
-          <ul className="list-disc pl-5">
-            {files.map((file, index) => (
-              <li key={index} className="flex items-center justify-between">
-                <span>{file.name}</span>
-                <button
-                  onClick={() => setFiles(files.filter((_, i) => i !== index))}
-                  className="text-red-500 hover:text-red-700"
-                >
-                  ✕
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </div>
+        <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" />
+      </svg>
+    </button>
   );
 } 
