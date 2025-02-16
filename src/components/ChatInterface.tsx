@@ -94,7 +94,7 @@ export default function ChatInterface() {
               ref={textareaRef}
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              placeholder="Ask Gemini..."
+              placeholder="Upload files or paste your notes here..."
               className="flex-1 bg-transparent border-none focus:ring-0 resize-none overflow-hidden py-1 px-3 text-gray-100 placeholder-gray-500"
               rows={1}
               style={{ minHeight: '24px' }}
