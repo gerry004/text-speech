@@ -34,38 +34,18 @@ export default function ChatInterface() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-6">
-        Turn your lecture notes into podcasts
-      </h1>
+    <div className="flex flex-col h-screen">
+      {/* Header */}
+      <header className="p-4 border-b">
+        <h1 className="text-2xl font-bold text-gray-800">
+          Turn Your Lecture Notes into Podcasts
+        </h1>
+      </header>
 
-      <div className="space-y-4">
-        <FileUploader files={files} setFiles={setFiles} />
-
-        <div className="relative">
-          <textarea
-            ref={textareaRef}
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            placeholder="Paste your lecture notes here..."
-            className="w-full min-h-[200px] p-4 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-          
-          <button
-            onClick={handleSubmit}
-            disabled={isLoading || (!inputText && files.length === 0)}
-            className="absolute bottom-4 right-4 bg-blue-500 text-white p-2 rounded-full disabled:bg-gray-300"
-          >
-            {isLoading ? (
-              <span className="loading">⏳</span>
-            ) : (
-              <span>➤</span>
-            )}
-          </button>
-        </div>
-
+      {/* Chat/Script Area */}
+      <div className="flex-1 overflow-auto p-4">
         {isLoading && (
-          <div className="text-center text-gray-600">
+          <div className="text-center text-gray-600 my-4">
             Generating podcast script...
           </div>
         )}
@@ -73,6 +53,37 @@ export default function ChatInterface() {
         {generatedScript && (
           <PodcastScript script={generatedScript} />
         )}
+      </div>
+
+      {/* Input Area */}
+      <div className="border-t p-4">
+        <div className="max-w-4xl mx-auto relative">
+          <div className="flex items-center gap-2 bg-gray-100 rounded-full p-2">
+            <FileUploader files={files} setFiles={setFiles} />
+            
+            <textarea
+              ref={textareaRef}
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              placeholder="Ask Gemini..."
+              className="flex-1 bg-transparent border-none focus:ring-0 resize-none overflow-hidden py-1 px-3"
+              rows={1}
+              style={{ minHeight: '24px' }}
+            />
+
+            <button
+              onClick={handleSubmit}
+              disabled={isLoading || (!inputText && files.length === 0)}
+              className="p-2 rounded-full text-gray-600 hover:bg-gray-200 disabled:opacity-50"
+            >
+              {isLoading ? (
+                <span className="loading">⏳</span>
+              ) : (
+                <span>➤</span>
+              )}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
